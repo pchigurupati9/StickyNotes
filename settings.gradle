@@ -1,0 +1,8 @@
+rootProject.name = 'codefest-sticky-notes-rest'
+
+// for testing locally without sending dependency to artifactory first
+//include ':bsd-error-logging-model'
+//project(':bsd-error-logging-model').projectDir = new File(settingsDir, '../bsd-error-logging-model')
+
+//include ':bsd-error-logging'
+//project(':bsd-error-logging').projectDir = new File(settingsDir, '../bsd-error-logging')

@@ -1,0 +1,116 @@
+buildscript {
+    ext {
+        springBootVersion = '2.6.0'
+    }
+    repositories {
+    	mavenCentral()
+//        maven {
+//            url 'http://maven.edj.devjones.com:8181/artifactory/repo'
+//        }
+    }
+    dependencies {
+        // spring-boot-gradle-plugin version needs to be compatible with the Gradle version
+        // this does not affect the libaries used in the app
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.4.13'
+//        classpath 'com.gorylenko.gradle-git-properties:gradle-git-properties:2.3.1'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+
+group = 'com.edwardjones.fplsurvivorneeds'
+version = '1.0.0-SNAPSHOT'
+
+sourceCompatibility = '1.8'
+
+repositories {
+	mavenCentral()
+//    maven {
+//        url 'http://maven.edj.devjones.com:8181/artifactory/repo'
+//    }
+}
+
+dependencies {
+
+    // the versions for these are controlled by spring-boot-dependencies in dependencyManagement section
+//    implementation (group: 'org.springframework.boot',             name: 'spring-boot-starter-actuator')
+//    implementation (group: 'org.springframework.boot',             name: 'spring-boot-starter-data-mongodb')
+    implementation (group: 'org.springframework.boot',             name: 'spring-boot-starter-validation')
+//    implementation (group: 'org.springframework.boot',             name: 'spring-boot-starter-data-jpa')
+
+//    implementation (group: 'org.springframework.integration',      name: 'spring-integration-mongodb')
+
+//    implementation (group: 'org.springframework.security',         name: 'spring-security-core')
+
+    implementation (group: 'org.mongodb',                          name: 'mongo-java-driver',                                    version: '3.12.10')
+
+    implementation (group: 'org.springdoc',                        name: 'springdoc-openapi-ui',                                 version: '1.5.12')
+    implementation (group: 'org.springdoc',                        name: 'springdoc-openapi-common',                             version: '1.5.12')
+
+    implementation (group: 'org.apache.httpcomponents',            name: 'httpclient',                                           version: '4.5.13')
+    implementation (group: 'org.apache.tomcat.embed',              name: 'tomcat-embed-core',                                    version: '9.0.55')
+
+}
+
+configurations.all {
+    resolutionStrategy {
+        // required when using snapshot dependencies
+        cacheChangingModulesFor 0, 'seconds'
+        cacheDynamicVersionsFor 0, 'seconds'
+
+        force 'com.google.guava:guava:31.0.1-jre'
+    }
+}
+
+dependencyManagement {
+    imports {
+        // this controls the springBootVersion of the app independent of the spring-boot-gradle-plugin so we can use any version of Gradle
+        mavenBom "org.springframework.boot:spring-boot-dependencies:${springBootVersion}"
+        mavenBom "com.fasterxml.jackson:jackson-bom:2.13.0"
+    }
+    resolutionStrategy {
+        // required when using snapshot dependencies
+        cacheChangingModulesFor 0, 'seconds'
+        cacheDynamicVersionsFor 0, 'seconds'
+    }
+}
+
+springBoot {
+    buildInfo()
+}
+
+task copyDockerfile(type: Copy) {
+    from 'src/main/docker'
+    into 'build/docker'
+}
+
+task copyDeployFiles(type: Copy) {
+    from 'src/main/deploy'
+    into 'build/deploy'
+}
+
+eclipse {
+    classpath {
+        // show source in Eclipse
+        downloadSources=true
+        downloadJavadoc=true
+
+        // sort the dependencies by name
+        file.whenMerged {
+            classpath -> classpath.entries.sort{
+                it.getKind().equalsIgnoreCase("lib") ? it.getPath().substring(it.getPath().lastIndexOf('/')) : ""
+            }
+        }
+    }
+}
+
+compileJava {
+    dependsOn copyDockerfile
+    dependsOn copyDeployFiles
+    options.compilerArgs += ["-Xlint:deprecation", "-Xlint:unchecked"]
+}
